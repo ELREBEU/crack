@@ -5,19 +5,21 @@
 # Hexadécimal : utilise uniquement les caractères [0-9a-f]
 # Base 64 : Utilise des caractères tels que +, /, et se termine souvent par =
 import os
+import re
 
-hash_str = "LPJNul+8oy4mspQi7omB8xT8WnZ/sFO61ldh7RTQ4CM="
+from passlib.handlers.bcrypt import bcrypt
 
-#MD2, MD4, MD5, SHA1, SHA224, SHA256, SHA-384, SHA512, SHA3-224, SHA3-256, SHA3-384, SHA3-512
+Yescrypt = "$y$"
+SHA512 = "$6$"
+MD5="$1$"
+Bcrypt = ["$2y$","$2b$"]
 
-hexa = "0123456789abcdef"
+
+hexa= "0123456789abcdef"
 binaire="01"
 base64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/="
 base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 base32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-
-
-
 def identifierHexa(hash):
 
     hash_hexa_type={
@@ -33,52 +35,101 @@ def identifierHexa(hash):
 
     hash_length = len(hash)
 
-    if all(c in hexa for c in hash_str):
+    if all(c in hexa for c in hash):
         return hash_hexa_type.get(hash_length)
 
 
-def identifierBase64(hash): #Rajouter à la fin que le hash doit se terminer par un "="
-
-    if len(hash) % 4 == 0:
-        if all(char in base64 for char in hash.rstrip("=")):
-            return "Base64"
-    return None
+def identifierBase64(hash):
+    try:
+        # Vérification si c'est bien un multiple de 4 et si cela correspond aux caractères de Base64
+        return re.match('^[A-Za-z0-9+/]*={0,2}$', hash) and len(hash) % 4 == 0
+    except:
+        return False
 
 def identifierBase58(hash):
     if all(char in base58 for char in hash):
-        return "Base58"
-    return None
+        return True
+    return False
 
 
 def identifierBase32(hash):
     if len(hash) % 8 == 0:
         if all(char in base32 for char in hash.rstrip("=")):
-            return "Base32"
-    return None
+            return True
+    return False
 
 def identifierBinaire(hash):
     if all(char in binaire for char in hash):
-        return "Binaire"
-    return None
+        return True
+    return False
 
 def cheat(hash):
     print(os.system("hashid -m "+hash))
 
+def IsHexa(hash):
+    if all(c in hexa for c in hash):
+        return True
+    else:
+        return False
 
-print(identifierBase64(hash_str))
+def IsBinaire(hash):
+    if all(c in binaire for c in hash):
+        return True
+    else:
+        return False
 
-# Exemple de hachage en Base64
-hash_base64 = "SGVsbG8gd29ybGQ="
-print(identifierBase64(hash_base64))  # Affichera "Base64"
+def startWith(hash):
+    if hash.startswith("$2b$") or hash.startswith("$2y$"):
+        return "bcrypt"
+    elif hash.startswith("$1$"):
+        return "MD5"
+    elif hash.startswith("$5$"):
+        return "SHA-256"
+    elif hash.startswith("$6$"):
+        return "SHA-512"
+    elif hash.startswith("$y$"):
+        return "Yescrypt"
+    else:
+        return None
 
-# Exemple de hachage en Base58
-hash_base58 = "2cQv7sP8KhxQJg6DXYq"
-print(identifierBase58(hash_base58))  # Affichera "Base58"
+def TypeBase(hash):
+    if identifierBase64(hash):
+        return "Base64"
+    elif identifierBase32(hash):
+        return "Base32"
+    elif identifierBase58(hash):
+        return "Base58"
+    else:
+        return None
 
-# Exemple de hachage en Base32
-hash_base32 = "JBSWY3DPEHPK3PXP"
-print(identifierBase32(hash_base32))  # Affichera "Base32"
 
-# Exemple de hachage binaire
-hash_binaire = "101010"
-print(identifierBinaire(hash_binaire))  # Affichera "Binaire"
+def detectTypeHash(hash):
+    if IsHexa(hash):
+        return "Hexa"
+    elif IsBinaire(hash):
+        return "Binaire"
+    type = startWith(hash)
+    if type is not None:
+        return type
+    else:
+        return TypeBase(hash)
+
+
+def identify(hash):
+    type = detectTypeHash(hash)
+    if type=="Hexa":
+        return identifierHexa(hash)
+    elif type=="Binaire":
+        return identifierBinaire(hash)
+    elif type=="None":
+        return startWith(hash)
+    else:
+        return type
+
+print(TypeBase("Uznr71EeNkJkUlypTsgbX1H68wsRom"))
+print(identify("48bb6e862e54f2a795ffc4e541caed4d"))
+
+
+
+
+

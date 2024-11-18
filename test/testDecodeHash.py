@@ -1,6 +1,11 @@
 import base64
 import hashlib
+import os
+import sys
+
 import base58
+import bcrypt
+from multiprocessing import Pool,cpu_count
 
 
 
@@ -20,7 +25,7 @@ def decode_binaire_to_text(chaine):
     return ''.join(chr(int(chaine[i:i+8], 2)) for i in range(0, len(chaine), 8))
 
 
-def decode_hash(hash, wordlist, hash_type):
+def decode_hashHexa(hash, wordlist, hash_type):
     hash_funcs={
         "SHA-1": hashlib.sha1,
         "SHA-224": hashlib.sha224,
@@ -47,20 +52,36 @@ def decode_hash(hash, wordlist, hash_type):
     return None
 
 
+def test_passwordBcrypt(password, hash_bytes):
+    if bcrypt.checkpw(password.encode('utf-8'), hash_bytes):
+        print(f"Mot de passe trouvé : {password}")
+        return True
+
+def decode_Bcrypt(hash, wordlist_path):
+    # Conversion du hash en bytes s'il est sous forme de chaîne
+    if isinstance(hash, str):
+        hash_bytes = hash.encode('utf-8')
+    else:
+        hash_bytes = hash
+
+    # Lire le fichier .txt ligne par ligne avec un encodage approprié
+    try:
+        with open(wordlist_path, 'r', encoding='latin-1') as file:
+            wordlist = [line.strip() for line in file]
+    except UnicodeDecodeError:
+        print("Erreur de décodage : impossible de lire certains caractères.")
+        return
+
+    # Utiliser `starmap` pour passer chaque mot de la wordlist avec le hash
+    with Pool(cpu_count()) as pool:
+        args = [(word, hash_bytes) for word in wordlist]
+        results = pool.starmap(test_passwordBcrypt, args)
+        if any(results):
+            print("Mot de passe cassé avec succès")
+        else:
+            print("Aucun mot de passe trouvé")
 
 
-hash = "48bb6e862e54f2a795ffc4e541caed4d"
-encoded_base64 = "SGVsbG8gd29ybGQ="
-encoded_base58 = "2cQv7sP8KhxQJg6DXYq"
-encoded_base32 = "JBSWY3DPEHPK3PXP"
-encoded_binaire = "0100100001100101011011000110110001101111"  # Correspond à "Hello"
 
-"""
-print(decode_base64(encoded_base64))  # Affiche: b'Hello world'
-print(decode_base58(encoded_base58))  # Affiche: b'Hello world' (en bytes)
-print(decode_base32(encoded_base32))  # Affiche: b'Hello world'
-print(decode_binaire(encoded_binaire))  # Affiche: 310939249775
-print(decode_binaire_to_text(encoded_binaire))  # Affiche: Hello
-"""
 
-print(decode_hash(hash,"/home/daoudi/Documents/outil_hack/wordlists/rockyou.txt","MD5"))
+print(decode_Bcrypt("$2y$12$Dwt1BZj6pcyc3Dy1FWZ5ieeUznr71EeNkJkUlypTsgbX1H68wsRom","/home/daoudi/Documents/outil_hack/wordlists/rockyou.txt"))
