@@ -1,6 +1,3 @@
-#MD5 possède 32 caractères hexadécimaux basée sur la séquence [a-z0-9]
-#SHA1 possède la même séquence que MD5 mais il possède 40 caractères hexadécimaux
-#SHA256 possède 64 caractères hexadécimaux
 #SHA512 possède 128 caractère hexadécimaux
 # Hexadécimal : utilise uniquement les caractères [0-9a-f]
 # Base 64 : Utilise des caractères tels que +, /, et se termine souvent par =
@@ -23,14 +20,14 @@ base32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 def identifierHexa(hash):
 
     hash_hexa_type={
-        32:["MD2","MD4","MD5","RIPEMD-128","Blake2s"],
+        32:["MD5","Blake2s","MD4","MD2"],
         40:["SHA-1","RIPEMD-160"],
         48:["Tiger"],
         56:["SHA-224", "SHA3-224"],
-        64:["SHA-256","SHA3-256","RIPEMD-256","Blake3"],
+        64:["SHA-256","SHA3-256","Blake3","RIPEMD-256"],
         80:["RIPEMD-320"],
         96:["SHA-384","SHA3-384"],
-        128:["SHA-512","SHA3-512","Whirlpool","Blake2b"],
+        128:["SHA-512","SHA3-512","Blake2b","Whirlpool"],
     }
 
     hash_length = len(hash)
@@ -80,7 +77,7 @@ def IsBinaire(hash):
 
 def startWith(hash):
     if hash.startswith("$2b$") or hash.startswith("$2y$"):
-        return "bcrypt"
+        return "Bcrypt"
     elif hash.startswith("$1$"):
         return "MD5"
     elif hash.startswith("$5$"):
@@ -91,6 +88,7 @@ def startWith(hash):
         return "Yescrypt"
     else:
         return None
+
 
 def TypeBase(hash):
     if identifierBase64(hash):
@@ -104,15 +102,27 @@ def TypeBase(hash):
 
 
 def detectTypeHash(hash):
+    # Priorité : détecter les types de hachage avec préfixes spécifiques
+    type = startWith(hash)
+    if type is not None:
+        return type
+
+    # Vérifications secondaires pour les bases ou autres formats
     if IsHexa(hash):
         return "Hexa"
     elif IsBinaire(hash):
         return "Binaire"
-    type = startWith(hash)
-    if type is not None:
-        return type
-    else:
-        return TypeBase(hash)
+    elif identifierBase64(hash):
+        return "Base64"
+    elif identifierBase58(hash):
+        return "Base58"
+    elif identifierBase32(hash):
+        return "Base32"
+
+    # Aucun type détecté
+    return None
+
+
 
 
 def identify(hash):
@@ -125,11 +135,3 @@ def identify(hash):
         return startWith(hash)
     else:
         return type
-
-#print(TypeBase("Uznr71EeNkJkUlypTsgbX1H68wsRom"))
-print(identify("48bb6e862e54f2a795ffc4e541caed4d"))
-
-
-
-
-

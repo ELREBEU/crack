@@ -84,4 +84,6 @@ def decode_Bcrypt(hash, wordlist_path):
 
 
 
+
+
 print(decode_Bcrypt("$2y$12$Dwt1BZj6pcyc3Dy1FWZ5ieeUznr71EeNkJkUlypTsgbX1H68wsRom","/home/daoudi/Documents/outil_hack/wordlists/rockyou.txt"))
